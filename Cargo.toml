@@ -6,6 +6,10 @@ edition = "2021"
 resolver = "2"
 rust-version = "1.77.0"
 
+[[bin]]
+name = "byr-pet"
+harness = false
+
 [profile.release]
 opt-level = "s"
 strip = true
@@ -29,29 +33,28 @@ experimental = ["esp-idf-svc/experimental"]
 embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-svc/embassy-time-driver"]
 random_mac = ["rand"]
 clean_nvs = []
+restore = []
 
 [dependencies]
 log = { version = "0.4", default-features = false }
-esp-idf-svc = { version = "0.48", default-features = false }
+esp-idf-svc = { version = "0.49.1", default-features = false }
 serde = { version = "1.0.201", features = ["derive"] }
 bincode = "1.3.3"
 anyhow = "1.0.83"
 heapless = "0.8.0"
-esp-idf-hal = "0.43.1"
-twox-hash = "1.6.3"
-embedded-svc = "0.27.1"
+esp-idf-hal = "0.44.1"
+twox-hash = "2.0.1"
+embedded-svc = "0.28.0"
 urlencoding = "2.1.3"
 include_dir = "0.7.3"
 serde_json = "1.0.117"
 rand = { version = "0.8.5", optional = true }
 lazy_static = "1.4.0"
-
-[patch.crates-io]
-esp-idf-svc = { git = "https://github.com/YouXam/esp-idf-svc.git", branch = "fix-http-error-handling" }
-embedded-svc = { git = "https://github.com/esp-rs/embedded-svc.git" }
+pest = "2.7.14"
+pest_derive = "2.7.14"
 
 [build-dependencies]
-embuild = "0.31.3"
+embuild = "0.32.0"
 flate2 = "1.0.30"
 mime_guess = "2.0.4"
 

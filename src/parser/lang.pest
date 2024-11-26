@@ -1,0 +1,11 @@
+integer = @{ ASCII_DIGIT+ }
+boolean = { "true" | "false" }
+string = ${ "\"" ~ inner ~ "\"" }
+inner = @{ char* }
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+}
+SPACES =  _{ " " | "\t" | "\n" | "\r" }
+value = _{ integer | boolean | string }
+values = _{ value ~ (SPACES ~ value)* }

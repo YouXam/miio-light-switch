@@ -2,7 +2,7 @@ mod bupt;
 mod provisioning;
 
 use anyhow::{bail, Result};
-use esp_idf_hal::delay;
+use esp_idf_hal::{delay, modem::Modem};
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
     hal::{peripheral, prelude::Peripherals},
@@ -136,7 +136,7 @@ pub fn generate_random_mac() -> [u8; 6] {
     mac
 }
 
-pub fn connect() -> Result<Box<EspWifi<'static>>> {
+pub fn connect(modem: Option<Modem>) -> Result<Box<EspWifi<'static>>> {
     set_target_level("wifi", log::LevelFilter::Warn)?;
     set_target_level("wifi_init", log::LevelFilter::Warn)?;
 
@@ -148,7 +148,7 @@ pub fn connect() -> Result<Box<EspWifi<'static>>> {
             log::info!("Loaded NetConfig: {:?}", &config);
             connect_wifi_with_config(
                 config,
-                Peripherals::take()?.modem,
+                modem.unwrap_or_else(|| Peripherals::take().unwrap().modem),
                 EspSystemEventLoop::take()?,
             )
         }
