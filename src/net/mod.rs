@@ -5,18 +5,16 @@ use anyhow::{bail, Result};
 use esp_idf_hal::{delay, modem::Modem};
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
-    hal::{peripheral, prelude::Peripherals},
     log::set_target_level,
     wifi::{AuthMethod, BlockingWifi, ClientConfiguration, Configuration, EspWifi},
 };
 use std::fmt;
 
 fn connect_wifi_with_config(
+    esp_wifi: &mut EspWifi<'static>,
     config: NetConfig,
-    modem: impl peripheral::Peripheral<P = esp_idf_svc::hal::modem::Modem> + 'static,
-    sysloop: EspSystemEventLoop,
-) -> Result<Box<EspWifi<'static>>> {
-    let nvs = crate::nvs::nvs();
+    sys_loop: EspSystemEventLoop,
+) -> Result<()> {
     let mut bupt_account = None;
     let (auth_method, ssid, pass) = match config {
         NetConfig::BuptPortal(account) => {
@@ -25,7 +23,6 @@ fn connect_wifi_with_config(
         }
         NetConfig::NormalWifi(wifi) => (AuthMethod::WPA2Personal, wifi.ssid, wifi.password),
     };
-    let mut esp_wifi = EspWifi::new(modem, sysloop.clone(), Some(nvs))?;
 
     #[cfg(feature = "random_mac")]
     {
@@ -39,7 +36,7 @@ fn connect_wifi_with_config(
         );
     }
 
-    let mut wifi = BlockingWifi::wrap(&mut esp_wifi, sysloop)?;
+    let mut wifi = BlockingWifi::wrap(esp_wifi, sys_loop)?;
 
     wifi.set_configuration(&Configuration::Client(ClientConfiguration {
         ssid: heapless::String::<32>::from_iter(ssid.chars()),
@@ -99,7 +96,7 @@ fn connect_wifi_with_config(
             }
         }
     }
-    Ok(Box::new(esp_wifi))
+    Ok(())
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -136,26 +133,47 @@ pub fn generate_random_mac() -> [u8; 6] {
     mac
 }
 
-pub fn connect(modem: Option<Modem>) -> Result<Box<EspWifi<'static>>> {
-    set_target_level("wifi", log::LevelFilter::Warn)?;
-    set_target_level("wifi_init", log::LevelFilter::Warn)?;
+pub struct NetManager {
+    pub wifi: EspWifi<'static>,
+    pub sysloop: EspSystemEventLoop,
+}
 
-    #[cfg(feature = "clean_nvs")]
-    crate::nvs::remove::<NetConfig>()?;
-
-    match crate::nvs::load::<NetConfig>()? {
-        Some(config) => {
-            log::info!("Loaded NetConfig: {:?}", &config);
-            connect_wifi_with_config(
-                config,
-                modem.unwrap_or_else(|| Peripherals::take().unwrap().modem),
-                EspSystemEventLoop::take()?,
-            )
-        }
-        None => {
-            let p = provisioning::Provisioner::new()?;
-            p.wait();
-            Ok(p.wifi)
-        }
+impl NetManager {
+    pub fn new(modem: Modem) -> anyhow::Result<Self> {
+        let sysloop = EspSystemEventLoop::take().unwrap();
+        let nvs = crate::nvs::nvs();
+        let esp_wifi = EspWifi::new(modem, sysloop.clone(), Some(nvs))?;
+        Ok(Self {
+            wifi: esp_wifi,
+            sysloop
+        })
     }
+
+    pub fn connect(&mut self) -> Result<()> {
+        set_target_level("wifi", log::LevelFilter::Warn)?;
+        set_target_level("wifi_init", log::LevelFilter::Warn)?;
+
+        #[cfg(feature = "clean_nvs")]
+        crate::nvs::remove::<NetConfig>()?;
+
+        match crate::nvs::load::<NetConfig>()? {
+            Some(config) => {
+                log::info!("Loaded NetConfig: {:?}", &config);
+                connect_wifi_with_config(
+                    &mut self.wifi,
+                    config,
+                    self.sysloop.clone(),
+                )
+            }
+            None => {
+                let p = provisioning::Provisioner::new(
+                    &mut self.wifi,
+                    self.sysloop.clone(),
+                )?;
+                p.wait();
+                Ok(())
+            }
+        }
+}
+
 }

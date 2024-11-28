@@ -4,7 +4,7 @@ use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_hal::uart::{self, Uart};
 use esp_idf_hal::{delay, prelude::*};
 use std::fmt::Write;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::parser::{parse, Value};
 
@@ -21,6 +21,31 @@ fn readline(uart: &uart::UartDriver) -> anyhow::Result<String> {
                 return Ok(s);
             }
             write!(s, "{}", buf[i] as char)?;
+        }
+    }
+}
+
+fn readline_timeout(uart: &uart::UartDriver, timeout_ms: u64) -> anyhow::Result<String> {
+    let mut buf = [0u8; 1024];
+    let mut s = String::new();
+
+    let timeout = Duration::from_millis(timeout_ms);
+    let start_time = Instant::now();
+
+    loop {
+        if start_time.elapsed() >= timeout {
+            return Err(anyhow::anyhow!("timeout"));
+        }
+
+        let cnt = uart.read(&mut buf, delay::TICK_RATE_HZ / 100)?;
+        for i in 0..cnt {
+            if buf[i] == 0 {
+                break;
+            }
+            if buf[i] == b'\r' || buf[i] == b'\n' {
+                return Ok(s);
+            }
+            s.push(buf[i] as char);
         }
     }
 }
@@ -135,7 +160,7 @@ impl Serial {
     pub fn send(&mut self, message: &str) -> anyhow::Result<String> {
         log::info!("[+] <- {}", message);
         writeline(&mut self.uart, message)?;
-        let response = readline(&self.uart)?;
+        let response = readline_timeout(&self.uart, 500)?;
         log::info!("    -> {}", response);
         Ok(response)
     }
@@ -177,7 +202,7 @@ impl Serial {
     pub fn get_down(&mut self) -> anyhow::Result<Option<Event>> {
         // log::info!("[+] <- {}", "get_down");
         writeline(&mut self.uart, "get_down")?;
-        let response = readline(&self.uart)?;
+        let response = readline_timeout(&self.uart, 500)?;
         // log::info!("    -> {}", response);
         if response == "down none" {
             Ok(None)

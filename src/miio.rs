@@ -10,7 +10,7 @@ pub struct Storage {
 
 pub struct IoTFramework {
     properties: HashMap<(u32, u32), Storage>,
-    callbacks: HashMap<(u32, u32), fn(&Value)>,
+    callbacks: HashMap<(u32, u32), Box<dyn FnMut(&Value)>>,
 }
 
 impl IoTFramework {
@@ -21,10 +21,10 @@ impl IoTFramework {
         }
     }
 
-    pub fn register_property(&mut self, siid: u32, piid: u32, value: Value, callback: fn(&Value)) {
+    pub fn register_property(&mut self, siid: u32, piid: u32, value: Value, callback: impl FnMut(&Value) + 'static) {
         let prop = Storage { siid, piid, value };
         self.properties.insert((siid, piid), prop);
-        self.callbacks.insert((siid, piid), callback);
+        self.callbacks.insert((siid, piid), Box::new(callback));
     }
 
     pub fn on_get_properties(&self, props: Vec<Property>) -> String {
@@ -60,7 +60,7 @@ impl IoTFramework {
                         p_existing.value = value;
                         response.push(format!("{} {} 0", p_existing.siid, p_existing.piid));
                         result.push(format!("{} {} {}", p_existing.siid, p_existing.piid, p_existing.value));
-                        if let Some(callback) = self.callbacks.get(&key) {
+                        if let Some(callback) = self.callbacks.get_mut(&key) {
                             callback(&p_existing.value);
                         }
                     } else {
@@ -75,5 +75,22 @@ impl IoTFramework {
             format!("result {}", response.join(" ")),
             format!("properties_changed {}", result.join(" "))
         ]
+    }
+
+    pub fn set_property(&mut self, siid: u32, piid: u32, value: Value) -> Option<String> {
+        let key = (siid, piid);
+        if let Some(prop) = self.properties.get_mut(&key) {
+            if prop.value != value {
+                prop.value = value.clone();
+                if let Some(callback) = self.callbacks.get_mut(&key) {
+                    callback(&prop.value);
+                }
+                Some(format!("properties_changed {} {} {}", siid, piid, &prop.value))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }

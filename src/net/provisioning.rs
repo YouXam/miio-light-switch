@@ -13,7 +13,6 @@ use embedded_svc::http::Headers;
 use esp_idf_hal::delay;
 use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
-    hal::prelude::Peripherals,
     http::{
         server::{EspHttpConnection, EspHttpServer, Request},
         Method,
@@ -81,7 +80,6 @@ fn check_host_and_log<'a, 'b>(
 }
 
 pub struct Provisioner {
-    pub wifi: Box<EspWifi<'static>>,
     finished: Arc<(Mutex<bool>, Condvar)>,
     #[allow(dead_code)]
     dns: DnsServer,
@@ -89,9 +87,10 @@ pub struct Provisioner {
     http: EspHttpServer<'static>,
 }
 
+
 impl Provisioner {
-    pub fn new() -> anyhow::Result<Self> {
-        let wifi = setup_ap()?;
+    pub fn new(wifi: &mut EspWifi<'static>, sys_loop: EspSystemEventLoop) -> anyhow::Result<Self> {
+        setup_ap(wifi, sys_loop)?;
 
         let mut dns = DnsServer::new(IP);
         dns.start()?;
@@ -208,7 +207,6 @@ impl Provisioner {
         log::info!("Now visit http://{} to login", IP);
 
         Ok(Self {
-            wifi,
             dns,
             finished,
             http,
@@ -225,12 +223,7 @@ impl Provisioner {
     }
 }
 
-fn setup_ap() -> anyhow::Result<Box<EspWifi<'static>>> {
-    let peripherals = Peripherals::take()?;
-    let sys_loop = EspSystemEventLoop::take()?;
-    let nvs = crate::nvs::nvs();
-
-    let mut esp_wifi = EspWifi::new(peripherals.modem, sys_loop.clone(), Some(nvs))?;
+fn setup_ap(esp_wifi: &mut EspWifi<'static>, sys_loop: EspSystemEventLoop) -> anyhow::Result<()> {
 
     esp_wifi.swap_netif_ap(EspNetif::new_with_conf(&NetifConfiguration {
         key: "WIFI_AP_DEF_BYR_PET".try_into().unwrap(),
@@ -261,7 +254,7 @@ fn setup_ap() -> anyhow::Result<Box<EspWifi<'static>>> {
         );
     }
 
-    let mut wifi = BlockingWifi::wrap(&mut esp_wifi, sys_loop)?;
+    let mut wifi = BlockingWifi::wrap(esp_wifi, sys_loop)?;
 
     let wifi_configuration = wifi::Configuration::Mixed(
         ClientConfiguration {
@@ -304,7 +297,7 @@ fn setup_ap() -> anyhow::Result<Box<EspWifi<'static>>> {
     log::info!("Connected to BUPT-portal: {:?}", ip_info);
     info!("Created Wi-Fi with WIFI_SSID `{}`", SSID);
 
-    Ok(Box::new(esp_wifi))
+    Ok(())
 }
 
 const DNS_MAX_LEN: usize = 512;

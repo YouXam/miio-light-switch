@@ -6,7 +6,7 @@ use pest::Parser;
 #[grammar = "parser/lang.pest"]
 struct LangParser;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Integer(u32),
     Boolean(bool),
