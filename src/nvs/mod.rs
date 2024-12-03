@@ -70,9 +70,9 @@ where
 fn _remove<T>(key: Option<&str>) -> anyhow::Result<bool>
 where
     T: serde::Serialize + for<'a> serde::Deserialize<'a>,
-{
+{   
     let mut storage = esp_idf_svc::nvs::EspNvs::new(
-        esp_idf_svc::nvs::EspNvsPartition::<esp_idf_svc::nvs::NvsDefault>::take().unwrap(),
+        nvs(),
         &hash_type::<T>(),
         true,
     )?;

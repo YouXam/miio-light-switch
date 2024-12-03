@@ -1,16 +1,47 @@
 use core::fmt;
 
 use pest::Parser;
+use serde::{Deserialize, Serialize};
 
 #[derive(pest_derive::Parser)]
 #[grammar = "parser/lang.pest"]
 struct LangParser;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Value {
     Integer(u32),
     Boolean(bool),
     String(String),
+}
+
+impl From<bool> for Value {
+    fn from(item: bool) -> Self {
+        Value::Boolean(item)
+    }
+}
+
+impl From<String> for Value {
+    fn from(item: String) -> Self {
+        Value::String(item)
+    }
+}
+
+impl From<&str> for Value {
+    fn from(item: &str) -> Self {
+        Value::String(item.to_string())
+    }
+}
+
+impl From<u32> for Value {
+    fn from(item: u32) -> Self {
+        Value::Integer(item.into())
+    }
+}
+
+impl From<i32> for Value {
+    fn from(item: i32) -> Self {
+        Value::Integer(item as u32)
+    }
 }
 
 impl fmt::Display for Value {

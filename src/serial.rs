@@ -202,7 +202,7 @@ impl Serial {
     pub fn get_down(&mut self) -> anyhow::Result<Option<Event>> {
         // log::info!("[+] <- {}", "get_down");
         writeline(&mut self.uart, "get_down")?;
-        let response = readline_timeout(&self.uart, 500)?;
+        let response = readline_timeout(&self.uart, 1000)?;
         // log::info!("    -> {}", response);
         if response == "down none" {
             Ok(None)

@@ -35,7 +35,7 @@ use crate::net::bupt;
 static FRONTEND: Dir = include_dir!("$OUT_DIR/frontend");
 
 const STACK_SIZE: usize = 10240;
-const SSID: &str = "BYR-pet";
+const SSID: &str = "smart-light";
 // Wi-Fi channel, between 1 and 11
 const CHANNEL: u8 = 11;
 

@@ -56,7 +56,7 @@ export default function Component() {
                             登录成功
                         </h1>
                         <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                            现在您可以断开 BYR-pet Wi-Fi 连接
+                            现在您可以断开 Smart Light Wi-Fi 连接
                         </p>
                     </div>
                 </div>
@@ -70,7 +70,7 @@ export default function Component() {
                 <div className="w-full max-w-md space-y-8">
                     <div className="text-center">
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
-                            Welcome to BYR-pet
+                            Welcome to Smart Light
                         </h1>
                         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                             输入学号和校园网密码以连接 BUPT-portal

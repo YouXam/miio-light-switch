@@ -18,4 +18,4 @@ case "$1" in
     ;;
 esac
 
-web-flash --chip esp32s3 target/xtensa-esp32s3-espidf/${BUILD_MODE}/byr-pet
+web-flash --chip esp32s3 target/xtensa-esp32s3-espidf/${BUILD_MODE}/smart-light

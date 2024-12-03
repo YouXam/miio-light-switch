@@ -1,5 +1,5 @@
 [package]
-name = "byr-pet"
+name = "smart-light"
 version = "0.1.0"
 authors = ["YouXam <youxam@outlook.com>"]
 edition = "2021"
@@ -7,7 +7,7 @@ resolver = "2"
 rust-version = "1.77.0"
 
 [[bin]]
-name = "byr-pet"
+name = "smart-light"
 harness = false
 
 [profile.release]
