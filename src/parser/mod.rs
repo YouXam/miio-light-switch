@@ -112,3 +112,7 @@ pub fn parse(input: &str) -> Vec<Value> {
 
     return values;
 }
+
+pub fn json_str_to_vec(json_str: &str) -> Result<Vec<String>, serde_json::Error> {
+    serde_json::from_str(json_str)
+}

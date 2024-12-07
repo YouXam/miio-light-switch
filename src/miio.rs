@@ -34,7 +34,7 @@ impl IoTFramework {
     ) -> anyhow::Result<Self> {
         let mut serial = Serial::new(uart, tx, rx);
         serial.model(model)?;
-        serial.version(version, pid)?;
+        let _ = serial.version(version, pid);
 
         Ok(IoTFramework {
             properties: HashMap::new(),
@@ -52,7 +52,7 @@ impl IoTFramework {
     pub fn restore(&mut self) -> anyhow::Result<()> {
         self.serial.restore()?;
         self.serial.model(self.model)?;
-        self.serial.version(self.version, self.pid)?;
+        let _ = self.serial.version(self.version, self.pid);
         Ok(())
     }
 
@@ -95,12 +95,7 @@ impl IoTFramework {
             let key = (prop.siid, prop.piid);
             if let Some(p) = self.properties.get(&key) {
                 let code = 0;  // 操作成功
-                let value_str = match &p.value {
-                    Value::Integer(val) => val.to_string(),
-                    Value::Boolean(val) => val.to_string(),
-                    Value::String(val) => val.clone(),
-                };
-                response.push(format!("{} {} {} {}", p.siid, p.piid, code, value_str));
+                response.push(format!("{} {} {} {}", p.siid, p.piid, code, &p.value));
             } else {
                 response.push(format!("{} {} -4003", prop.siid, prop.piid)); // 属性不存在
             }

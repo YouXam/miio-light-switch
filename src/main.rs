@@ -18,8 +18,8 @@ use esp_idf_hal::{
     prelude::*
 };
 use esp_idf_svc::log::set_target_level;
-use parser::Value;
-use std::{collections::HashSet, sync::{Arc, Mutex}, thread::{self, spawn}, time::Duration};
+use parser::{json_str_to_vec, Value};
+use std::{collections::HashSet, ops::Index, sync::{Arc, Mutex}, thread::{self, spawn}, time::Duration};
 use ap::status;
 use esp_idf_hal::adc::oneshot::AdcDriver;
 
@@ -62,6 +62,12 @@ fn main() -> anyhow::Result<()> {
 
     let illumination = Arc::new(Mutex::new(None::<u16>));
     let illumination_clone = Arc::clone(&illumination);
+
+    let bluetooth_devices = Arc::new(Mutex::<std::vec::Vec<String>>::new(vec![]));
+    let bluetooth_devices_clone = Arc::clone(&bluetooth_devices);
+
+    let bluetooth_matched = Arc::new(Mutex::new(false));
+    let bluetooth_matched_clone = Arc::clone(&bluetooth_matched);
 
     spawn(move || {
         let adc = AdcDriver::new(peripherals.adc1).unwrap();
@@ -115,8 +121,15 @@ fn main() -> anyhow::Result<()> {
                             let ble_device = BLEDevice::take();
                             let mut ble_scan = BLEScan::new();
                             let mut ble_devices = HashSet::new();
+                            let mut matched = false;
+
                             ble_scan
-                                .start(ble_device, 10000, |device, _| {
+                                .start(ble_device, 10000, |device, data| {
+                                    if let Some(name) = data.name() {
+                                        if bluetooth_devices.lock().unwrap().iter().find(|&x| x == name).is_some() {
+                                            matched = true;
+                                        }
+                                    }
                                     ble_devices.insert(format!("{:?}", device.addr()));
                                     None::<()>
                                 })
@@ -124,7 +137,9 @@ fn main() -> anyhow::Result<()> {
                                 .unwrap();
                             let cnt = ble_devices.len();
                             log::info!("Scanned BLE devices: {:?}", cnt);
+                            log::info!("Matched devices: {:?}", matched);
                             *ble_device_cnt.lock().unwrap() = Some(cnt);
+                            *bluetooth_matched.lock().unwrap() = matched;
                         });
 
                         std::thread::sleep(Duration::from_secs(10));
@@ -170,6 +185,7 @@ fn main() -> anyhow::Result<()> {
             (2, 4, false), // 防闪烁模式
             (4, 3, false), // 耗电量使用累加形式
             (5, 1, false), // 指示灯开关
+            (7, 3, false), // 是否搜索到目标设备
         ])
         .register(2, 1, false)  // 开关
         .on(move |e| if let &Value::Boolean(value) = e {
@@ -182,8 +198,15 @@ fn main() -> anyhow::Result<()> {
             }
         })
         .register(7, 4, "") // 蓝牙设备名称
-        .on(|value| {
-            println!("bluetooth-devices: {}", value)
+        .on(move |value| {
+            match value {
+                Value::String(value) => {
+                    *bluetooth_devices_clone.lock().unwrap() = json_str_to_vec(&value).unwrap();
+                    println!("bluetooth-devices: {}", value)
+                },
+                _ => {}
+                
+            }
         })
         .load()?;
 
@@ -202,6 +225,7 @@ fn main() -> anyhow::Result<()> {
         if let Some(illumination) = *illumination_clone.lock().unwrap() {
             miio.set_property(8, 1, Value::Integer(illumination as u32));
         }
+        miio.set_property(7, 3, Value::Boolean(*bluetooth_matched_clone.lock().unwrap()));
         std::thread::sleep(Duration::from_millis(200));
     }
 }
