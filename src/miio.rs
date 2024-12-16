@@ -69,6 +69,10 @@ impl IoTFramework {
         self
     }
 
+    pub fn get_from_cache(&self, siid: u32, piid: u32) -> Option<&Value> {
+        self.properties.get(&(siid, piid)).map(|p| &p.value)
+    }
+
     pub fn load(&mut self) -> anyhow::Result<&mut Self> {
         if let Some(data) = crate::nvs::load_from::<Value>(&format!("{}.{}", self.siid, self.piid))? {
             self.set_property(self.siid, self.piid, data)?;

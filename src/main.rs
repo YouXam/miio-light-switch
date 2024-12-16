@@ -19,7 +19,7 @@ use esp_idf_hal::{
 };
 use esp_idf_svc::log::set_target_level;
 use parser::{json_str_to_vec, Value};
-use std::{collections::HashSet, ops::Index, sync::{Arc, Mutex}, thread::{self, spawn}, time::Duration};
+use std::{collections::HashSet, sync::{Arc, Mutex}, thread::{self, spawn}, time::Duration};
 use ap::status;
 use esp_idf_hal::adc::oneshot::AdcDriver;
 
@@ -29,6 +29,8 @@ mod net;
 mod nvs;
 mod parser;
 mod serial;
+
+const MOTOR: (f32, f32) = (0.028, 0.053);
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -49,10 +51,19 @@ fn main() -> anyhow::Result<()> {
             .resolution(Resolution::Bits13)
     )?;
 
+    let mut miio = crate::miio::IoTFramework::new(
+        peripherals.uart1, 
+        pins.gpio12, 
+        pins.gpio11,
+        "csbupt.switch.smsw",
+        "0001",
+        "24351"
+    )?;
+
     let mut driver = LedcDriver::new(peripherals.ledc.channel0, timer_driver, pins.gpio9)?;
     let max_duty = driver.get_max_duty();
 
-    driver.set_duty((max_duty as f32 * 0.025) as u32)?;
+    driver.set_duty((max_duty as f32 * MOTOR.0) as u32)?;
 
     let ble_device_cnt = Arc::new(Mutex::new(None::<usize>));
     let ble_device_cnt_clone = Arc::clone(&ble_device_cnt);
@@ -69,6 +80,9 @@ fn main() -> anyhow::Result<()> {
     let bluetooth_matched = Arc::new(Mutex::new(false));
     let bluetooth_matched_clone = Arc::clone(&bluetooth_matched);
 
+    let illumination_touched = Arc::new(Mutex::new(false));
+    let illumination_touched_clone = Arc::clone(&illumination_touched);
+
     spawn(move || {
         let adc = AdcDriver::new(peripherals.adc1).unwrap();
         let mut adc_pin = AdcChannelDriver::new(&adc, pins.gpio1, &AdcChannelConfig {
@@ -84,6 +98,10 @@ fn main() -> anyhow::Result<()> {
                         Some(last_value) => {
                             if last_value.abs_diff(value) <= 50 {
                                 continue;
+                            }
+                            if value > last_value + 1000 {
+                                *illumination_touched.lock().unwrap() = true;
+                                log::info!("touched");
                             }
                         },
                         None => {}
@@ -154,15 +172,6 @@ fn main() -> anyhow::Result<()> {
         }
     })?;
 
-    let mut miio = crate::miio::IoTFramework::new(
-        peripherals.uart1, 
-        pins.gpio12, 
-        pins.gpio11,
-        "csbupt.switch.smsw",
-        "0001",
-        "24351"
-    )?;
-
     #[cfg(feature = "restore")]
     miio.restore()?;
 
@@ -190,11 +199,11 @@ fn main() -> anyhow::Result<()> {
         .register(2, 1, false)  // 开关
         .on(move |e| if let &Value::Boolean(value) = e {
             if value {
-                log::info!("Set motor to 0.025");
-                driver.set_duty((max_duty as f32 * 0.025) as u32).unwrap();
+                log::info!("Set motor to {}", MOTOR.0);
+                driver.set_duty((max_duty as f32 * MOTOR.0) as u32).unwrap();
             } else {
-                log::info!("Set motor to 0.043");
-                driver.set_duty((max_duty as f32 * 0.043) as u32).unwrap();
+                log::info!("Set motor to {}", MOTOR.1);
+                driver.set_duty((max_duty as f32 * MOTOR.1) as u32).unwrap();
             }
         })
         .register(7, 4, "") // 蓝牙设备名称
@@ -224,6 +233,15 @@ fn main() -> anyhow::Result<()> {
         }
         if let Some(illumination) = *illumination_clone.lock().unwrap() {
             miio.set_property(8, 1, Value::Integer(illumination as u32));
+        }
+        if *illumination_touched_clone.lock().unwrap() {
+            match miio.get_from_cache(2, 1) {
+                Some(Value::Boolean(value)) => {
+                    miio.set_property(2, 1, Value::Boolean(!value));
+                },
+                _ => {}
+            }
+            *illumination_touched_clone.lock().unwrap() = false;
         }
         miio.set_property(7, 3, Value::Boolean(*bluetooth_matched_clone.lock().unwrap()));
         std::thread::sleep(Duration::from_millis(200));
