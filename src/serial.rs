@@ -158,10 +158,10 @@ impl Serial {
     }
 
     pub fn send(&mut self, message: &str) -> anyhow::Result<String> {
-        log::info!("[+] <- {}", message);
+        // log::info!("[+] <- {}", message);
         writeline(&mut self.uart, message)?;
         let response = readline_timeout(&self.uart, 500)?;
-        log::info!("    -> {}", response);
+        // log::info!("    -> {}", response);
         Ok(response)
     }
 

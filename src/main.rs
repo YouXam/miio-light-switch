@@ -33,12 +33,15 @@ mod serial;
 const MOTOR: (f32, f32) = (0.028, 0.053);
 
 fn main() -> anyhow::Result<()> {
+    std::thread::sleep(Duration::from_secs(5));
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
 
     set_target_level("NimBLE", log::LevelFilter::Warn)?;
     set_target_level("BLE_INIT", log::LevelFilter::Warn)?;
     set_target_level("esp32_nimble", log::LevelFilter::Warn)?;
+    set_target_level("esp32_nimble::ble_device", log::LevelFilter::Warn)?;
+    set_target_level("esp_idf_svc::nvs", log::LevelFilter::Warn)?;
 
     let peripherals = Peripherals::take().unwrap();
     let pins = peripherals.pins;
@@ -63,7 +66,7 @@ fn main() -> anyhow::Result<()> {
     let mut driver = LedcDriver::new(peripherals.ledc.channel0, timer_driver, pins.gpio9)?;
     let max_duty = driver.get_max_duty();
 
-    driver.set_duty((max_duty as f32 * MOTOR.0) as u32)?;
+    driver.set_duty((max_duty as f32 * MOTOR.1) as u32)?;
 
     let ble_device_cnt = Arc::new(Mutex::new(None::<usize>));
     let ble_device_cnt_clone = Arc::clone(&ble_device_cnt);
@@ -83,6 +86,9 @@ fn main() -> anyhow::Result<()> {
     let illumination_touched = Arc::new(Mutex::new(false));
     let illumination_touched_clone = Arc::clone(&illumination_touched);
 
+    let last_close_time = Arc::new(Mutex::new(None::<u64>));
+    let last_close_time_clone = Arc::clone(&last_close_time);
+
     spawn(move || {
         let adc = AdcDriver::new(peripherals.adc1).unwrap();
         let mut adc_pin = AdcChannelDriver::new(&adc, pins.gpio1, &AdcChannelConfig {
@@ -99,7 +105,8 @@ fn main() -> anyhow::Result<()> {
                             if last_value.abs_diff(value) <= 50 {
                                 continue;
                             }
-                            if value > last_value + 1000 {
+                            if value > last_value + 1000 && 
+                                last_close_time.lock().unwrap().map_or(true, |x| x + 2 < std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()) {
                                 *illumination_touched.lock().unwrap() = true;
                                 log::info!("touched");
                             }
@@ -135,7 +142,7 @@ fn main() -> anyhow::Result<()> {
                         std::thread::sleep(Duration::from_secs(10));
 
                         block_on(async {
-                            log::info!("Start scanning BLE devices");
+                            // log::info!("Start scanning BLE devices");
                             let ble_device = BLEDevice::take();
                             let mut ble_scan = BLEScan::new();
                             let mut ble_devices = HashSet::new();
@@ -154,8 +161,8 @@ fn main() -> anyhow::Result<()> {
                                 .await
                                 .unwrap();
                             let cnt = ble_devices.len();
-                            log::info!("Scanned BLE devices: {:?}", cnt);
-                            log::info!("Matched devices: {:?}", matched);
+                            // log::info!("Scanned BLE devices: {:?}", cnt);
+                            // log::info!("Matched devices: {:?}", matched);
                             *ble_device_cnt.lock().unwrap() = Some(cnt);
                             *bluetooth_matched.lock().unwrap() = matched;
                         });
@@ -199,10 +206,11 @@ fn main() -> anyhow::Result<()> {
         .register(2, 1, false)  // 开关
         .on(move |e| if let &Value::Boolean(value) = e {
             if value {
-                log::info!("Set motor to {}", MOTOR.0);
+                log::info!("Open the switch");
                 driver.set_duty((max_duty as f32 * MOTOR.0) as u32).unwrap();
             } else {
-                log::info!("Set motor to {}", MOTOR.1);
+                last_close_time_clone.lock().unwrap().replace(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
+                log::info!("Close the switch");
                 driver.set_duty((max_duty as f32 * MOTOR.1) as u32).unwrap();
             }
         })
