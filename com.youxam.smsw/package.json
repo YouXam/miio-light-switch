@@ -1,0 +1,11 @@
+{
+        "name": "project-com-youxam-smsw",
+        "version": "1.0.0",
+        "scripts":{
+            "start":"node ../../bin/runProject.js"
+        },
+        "dependencies":{
+
+        },
+        "main": "index.js"
+    }
