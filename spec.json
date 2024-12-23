@@ -1,0 +1,312 @@
+{
+    "type": "urn:miot-spec-v2:device:switch:0000A003:csbupt-smsw:1:0000C808",
+    "description": "csbupt switch smsw",
+    "services": [
+        {
+            "iid": 1,
+            "type": "urn:miot-spec-v2:service:device-information:00007801:csbupt-smsw:1:0000C808",
+            "description": "Device Information",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:property:manufacturer:00000001:csbupt-smsw:1:0000C808",
+                    "description": "Device Manufacturer",
+                    "format": "string",
+                    "access": [
+                        "read"
+                    ]
+                },
+                {
+                    "iid": 2,
+                    "type": "urn:miot-spec-v2:property:model:00000002:csbupt-smsw:1:0000C808",
+                    "description": "Device Model",
+                    "format": "string",
+                    "access": [
+                        "read"
+                    ]
+                },
+                {
+                    "iid": 3,
+                    "type": "urn:miot-spec-v2:property:serial-number:00000003:csbupt-smsw:1:0000C808",
+                    "description": "Device Serial Number",
+                    "format": "string",
+                    "access": [
+                        "read"
+                    ]
+                },
+                {
+                    "iid": 4,
+                    "type": "urn:miot-spec-v2:property:firmware-revision:00000005:csbupt-smsw:1:0000C808",
+                    "description": "Current Firmware Version",
+                    "format": "string",
+                    "access": [
+                        "read"
+                    ]
+                }
+            ]
+        },
+        {
+            "iid": 2,
+            "type": "urn:miot-spec-v2:service:switch:0000780C:csbupt-smsw:1:0000C808",
+            "description": "Switch",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:property:on:00000006:csbupt-smsw:1:0000C808",
+                    "description": "Switch Status",
+                    "format": "bool",
+                    "access": [
+                        "read",
+                        "write",
+                        "notify"
+                    ]
+                },
+                {
+                    "iid": 2,
+                    "type": "urn:miot-spec-v2:property:mode:00000008:csbupt-smsw:1:0000C808",
+                    "description": "Mode",
+                    "format": "uint8",
+                    "access": [
+                        "read",
+                        "write",
+                        "notify"
+                    ],
+                    "value-list": [
+                        {
+                            "value": 0,
+                            "description": "Wired And Wireless"
+                        },
+                        {
+                            "value": 1,
+                            "description": "Wireless"
+                        }
+                    ]
+                },
+                {
+                    "iid": 3,
+                    "type": "urn:miot-spec-v2:property:fault:00000009:csbupt-smsw:1:0000C808",
+                    "description": "Device Fault",
+                    "format": "uint8",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-list": [
+                        {
+                            "value": 0,
+                            "description": "No Faults"
+                        },
+                        {
+                            "value": 1,
+                            "description": "Over Temperature"
+                        },
+                        {
+                            "value": 2,
+                            "description": "Overload"
+                        }
+                    ]
+                },
+                {
+                    "iid": 4,
+                    "type": "urn:miot-spec-v2:property:anti-flicker:00000202:csbupt-smsw:1:0000C808",
+                    "description": "Anti Flicker",
+                    "format": "bool",
+                    "access": [
+                        "read",
+                        "write",
+                        "notify"
+                    ]
+                }
+            ],
+            "actions": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:action:toggle:00002811:csbupt-smsw:1:0000C808",
+                    "description": "Toggle",
+                    "in": [],
+                    "out": []
+                }
+            ]
+        },
+        {
+            "iid": 3,
+            "type": "urn:miot-spec-v2:service:switch-sensor:00007828:csbupt-smsw:1:0000C808",
+            "description": "Switch Sensor",
+            "events": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:event:click:00005007:csbupt-smsw:1:0000C808",
+                    "description": "Click",
+                    "arguments": []
+                }
+            ]
+        },
+        {
+            "iid": 4,
+            "type": "urn:miot-spec-v2:service:power-consumption:0000780E:csbupt-smsw:1:0000C808",
+            "description": "Power Consumption",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:property:power-consumption:0000002F:csbupt-smsw:1:0000C808",
+                    "description": "Power Consumption",
+                    "format": "float",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-range": [
+                        0,
+                        65535,
+                        0.01
+                    ]
+                },
+                {
+                    "iid": 2,
+                    "type": "urn:miot-spec-v2:property:electric-power:00000066:csbupt-smsw:1:0000C808",
+                    "description": "Electric Power",
+                    "format": "uint16",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-range": [
+                        0,
+                        10000,
+                        1
+                    ],
+                    "unit": "watt"
+                },
+                {
+                    "iid": 3,
+                    "type": "urn:miot-spec-v2:property:power-consumption-accumulation-way:00000183:csbupt-smsw:1:0000C808",
+                    "description": "Power Consumption Accumulation Way",
+                    "format": "bool",
+                    "access": [
+                        "read",
+                        "notify"
+                    ]
+                }
+            ]
+        },
+        {
+            "iid": 5,
+            "type": "urn:miot-spec-v2:service:indicator-light:00007803:csbupt-smsw:1:0000C808",
+            "description": "Indicator Light",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:property:on:00000006:csbupt-smsw:1:0000C808",
+                    "description": "Switch Status",
+                    "format": "bool",
+                    "access": [
+                        "read",
+                        "write",
+                        "notify"
+                    ]
+                }
+            ]
+        },
+        {
+            "iid": 8,
+            "type": "urn:miot-spec-v2:service:illumination-sensor:0000783D:csbupt-smsw:1",
+            "description": "Illumination Sensor",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:miot-spec-v2:property:illumination:0000004E:csbupt-smsw:1",
+                    "description": "Illumination",
+                    "format": "float",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-range": [
+                        0,
+                        10000,
+                        1
+                    ],
+                    "unit": "lux"
+                }
+            ]
+        },
+        {
+            "iid": 6,
+            "type": "urn:csbupt-spec:service:wlan:00007801:csbupt-smsw:1",
+            "description": "wlan",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:csbupt-spec:property:sta-count:00000001:csbupt-smsw:1",
+                    "description": "",
+                    "format": "int32",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-range": [
+                        0,
+                        1024,
+                        1
+                    ],
+                    "unit": "pcs"
+                },
+                {
+                    "iid": 2,
+                    "type": "urn:csbupt-spec:property:wlan-status:00000002:csbupt-smsw:1",
+                    "description": "",
+                    "format": "bool",
+                    "access": [
+                        "read",
+                        "notify",
+                        "write"
+                    ]
+                }
+            ]
+        },
+        {
+            "iid": 7,
+            "type": "urn:csbupt-spec:service:bluetooth:00007802:csbupt-smsw:1",
+            "description": "bluetooth",
+            "properties": [
+                {
+                    "iid": 1,
+                    "type": "urn:csbupt-spec:property:bluetooth-cnt:00000001:csbupt-smsw:1",
+                    "description": "",
+                    "format": "uint32",
+                    "access": [
+                        "read",
+                        "notify"
+                    ],
+                    "value-range": [
+                        0,
+                        1024,
+                        1
+                    ],
+                    "unit": "pcs"
+                },
+                {
+                    "iid": 3,
+                    "type": "urn:csbupt-spec:property:matched:00000003:csbupt-smsw:1",
+                    "description": "",
+                    "format": "bool",
+                    "access": [
+                        "notify",
+                        "read"
+                    ]
+                },
+                {
+                    "iid": 4,
+                    "type": "urn:csbupt-spec:property:bluetooth-devices:00000002:csbupt-smsw:1",
+                    "description": "",
+                    "format": "string",
+                    "access": [
+                        "notify",
+                        "write",
+                        "read"
+                    ]
+                }
+            ]
+        }
+    ]
+}
